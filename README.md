@@ -1,4 +1,6 @@
-# Dynamic AI Offloading Protocol (DAOP)
+# Dynamic AI Offloading Protocol (DAOP) — Explainer
+
+> 📺 **[Live Demo](daop-illustration/)** — Browser-based illustration of `estimateQoS()` with interactive micro-benchmarks
 
 ## Table of Contents
 - [Authors](#authors)
