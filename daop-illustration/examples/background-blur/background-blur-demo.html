@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DAOP: Background Blur Demo</title>
+  <link rel="icon" href="data:,">
+  
+  <!-- CDN dependencies -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css" rel="stylesheet" crossorigin="anonymous" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-javascript.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js" crossorigin="anonymous"></script>
+
+  <style>
+    body { font-family: system-ui, sans-serif; line-height: 1.5; margin: 0 auto; padding: 20px; background: #f4f4f9; color: #333; }
+    h1, h2, h3, h4, h5 { margin-top: 0; }
+    
+    .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    .btn { background: #0078d4; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.2s; }
+    .btn:hover { background: #106ebe; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-warm { background: #e67e22; }
+    .btn-warm:hover { background: #d35400; }
+    .btn-warm:disabled { background: #ccc; }
+    .btn-icon { background: none; border: 1px solid #ccc; color: #555; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; transition: all 0.2s; display: inline-flex; align-items: center; gap: 5px; }
+    .btn-icon:hover { border-color: #0078d4; color: #0078d4; }
+    .btn-icon:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-icon.active { border-color: #0078d4; color: #0078d4; background: #e8f0fe; }
+    
+    .two-column-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 0; max-width: 1400px; margin: 0 auto; }
+    .two-column-layout > .divider { background: #555; }
+    .column { padding: 0 16px; }
+    .column-header { margin-bottom: 14px; }
+    .column-header h2 { margin: 0; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .column-header p { margin: 2px 0 0; font-size: 12px; color: #888; }
+    .col-app { }
+    .col-internals { background: #1e1e2e; border-radius: 8px; padding-top: 16px !important; padding-bottom: 8px; margin: -4px 0; color: #d4d4d4; }
+    .col-internals .column-header h2 { color: #ccc; }
+    .col-internals .column-header p { color: #888; }
+    .col-internals .card { background: #282840; border: 1px solid #444; border-radius: 4px; box-shadow: none; color: #d4d4d4; }
+    .col-internals .card h3 { color: #e0e0e0; font-family: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace; font-size: 14px; letter-spacing: 0.3px; }
+    .col-internals .card p { color: #bbb; }
+    .col-internals .card table { border-color: #444; }
+    .col-internals .card th { background: #333350; color: #ccc; border-color: #444; }
+    .col-internals .card td { border-color: #444; color: #bbb; }
+    .col-internals .card tr:nth-child(even) { background: #2e2e48; }
+    .col-internals .btn-icon { border-color: #555; color: #aaa; }
+    .col-internals .btn-icon:hover { border-color: #6ea8fe; color: #6ea8fe; }
+    .col-internals .btn-icon.active { border-color: #6ea8fe; color: #6ea8fe; background: rgba(110,168,254,0.12); }
+    .col-internals .btn-warm { background: #d35400; }
+    .col-internals .btn-warm:hover { background: #e67e22; }
+    .col-internals summary { color: #6ea8fe; }
+    .col-internals .card .status-msg { color: #bbb; }
+    .col-internals .mermaid { background: #fff; color: #333; }
+    @media (max-width: 900px) { .two-column-layout { grid-template-columns: 1fr; } .col-internals { margin-top: 10px; } }
+    
+    .excellent { background: #d4edda; color: #155724; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    .good { background: #d4edda; color: #155724; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    .fair { background: #fff3cd; color: #856404; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    .moderate { background: #ffe0b2; color: #e65100; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    .slow { background: #fce4ec; color: #880e4f; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    .very-slow { background: #f8d7da; color: #721c24; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    .poor { background: #f8d7da; color: #721c24; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    
+    .mermaid { background: white; padding: 10px; border-radius: 8px; border: 1px solid #ddd; min-height: 200px; overflow: auto; }
+    
+    #image-canvas { width: 100%; max-width: 512px; border: 1px solid #ddd; border-radius: 4px; display: block; margin-bottom: 15px; }
+    
+    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+    th, td { padding: 8px 12px; border: 1px solid #ddd; text-align: left; font-size: 13px; }
+    th { background: #f5f5f5; font-weight: 600; }
+    tr:nth-child(even) { background: #fafafa; }
+    
+    .op-chart { break-inside: avoid; }
+    details { margin-top: 10px; cursor: pointer; }
+    summary { font-weight: 600; color: #0078d4; outline: none; }
+  </style>
+</head>
+<body>
+
+<div id="support-banner"></div>
+
+<div class="two-column-layout">
+  <!-- Left Column: Web Application -->
+  <div class="column col-app">
+    <div class="column-header">
+      <h2>Web Application</h2>
+    </div>
+    <div class="card">
+      <h1>Background Blur with WebNN</h1>
+      <p>This demo applies AI-powered background blur using the WebNN API. The application only sees a high-level performance tier — all estimation internals are opaque.</p>
+      
+      <canvas id="image-canvas" width="512" height="512"></canvas>
+      
+      <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+        <button id="blur-btn" class="btn">🎨 Apply Background Blur</button>
+      </div>
+      
+      <div id="blur-status" style="margin-top: 10px; min-height: 20px;"></div>
+    </div>
+  </div>
+
+  <!-- Right Column: DAOP Internals -->
+  <div class="column col-internals">
+    <div class="column-header">
+      <h2>Under the Hood — DAOP Internals</h2>
+      <p>One possible implementation strategy (for illustration only)</p>
+    </div>
+    
+    <!-- Operator Analysis -->
+    <div class="card">
+      <h3>⚙️ Operator Micro-benchmarks</h3>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; align-items: center;">
+        <button class="btn-icon" id="toggle-results-btn" disabled title="Toggle benchmark results table"><span class="eye">👁</span> Benchmark Results</button>
+        <button class="btn-icon" id="show-curves-btn" disabled title="Toggle estimation curves"><span class="eye">👁</span> Estimation Curves</button>
+        <button class="btn btn-warm" id="bench-btn" style="padding: 6px 14px; font-size: 13px;">🔄 Rerun Micro-benchmarks</button>
+      </div>
+      <div id="bench-summary" style="margin-bottom: 10px;"></div>
+      <div id="bench-results" style="display:none;"></div>
+      <div id="model-details" style="display:none;"></div>
+    </div>
+
+    <!-- Computation Graph -->
+    <div id="graph-card" class="card" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin-bottom: 0;">1. Computation Graph (Weightless)</h3>
+        <button class="btn" id="toggle-graph-btn" style="padding: 4px 12px; font-size: 12px;">Expand</button>
+      </div>
+      <p>The graph structure is built without weights to allow instant analysis.</p>
+      <div id="comp-graph-wrap" style="display: none;">
+        <div class="mermaid" id="comp-graph"></div>
+      </div>
+    </div>
+
+    <!-- QoS Estimation -->
+    <div id="qos-card" class="card" style="display: none;">
+      <h3>2. QoS Estimation</h3>
+      <div id="qos-results"></div>
+    </div>
+
+    <!-- Offloading Decision -->
+    <div id="decision-card" class="card" style="display: none;">
+      <h3>3. Offloading Decision</h3>
+      <div id="decision-text"></div>
+    </div>
+
+    <!-- Execution -->
+    <div id="execution-card" class="card" style="display: none;">
+      <h3>4. Execution & Timing</h3>
+      <div id="execution-log"></div>
+      <div id="timing-comparison" style="margin-top: 15px;"></div>
+    </div>
+    
+  </div>
+</div>
+
+<script type="module">
+import { initDAOP, detectWebNNSupport } from "../../src/index.js";
+import { timeModelDatabase } from "../../src/qos/interpolation/time-model.js";
+import { polyEval } from "../../src/qos/interpolation/poly-fit.js";
+import { BenchRunner } from "../../src/qos/microbench/bench-runner.js";
+import { buildSelfieSegmentationGraph, loadWeights } from "./selfie-model.js";
+import { BlurRenderer } from "./blur-renderer.js";
+
+// Initialize Mermaid
+mermaid.initialize({
+  startOnLoad: false,
+  theme: "default",
+  securityLevel: "loose",
+  flowchart: { useMaxWidth: true },
+});
+
+let renderer;
+
+// 1. On page load
+window.addEventListener('DOMContentLoaded', async () => {
+  // Check WebNN support
+  const support = detectWebNNSupport();
+  if (!support.supported) {
+    document.getElementById("support-banner").innerHTML = `
+      <div class="card" style="background: #f8d7da; border-left: 4px solid #dc3545;">
+        <h3>WebNN Not Available</h3>
+        <p>${support.reason}</p>
+        <p>Please install a WebNN-capable browser: 
+          <a href="https://webnn.io/en/learn/get-started/installation" target="_blank">Installation Guide</a>
+        </p>
+      </div>`;
+    // Disable buttons
+    document.getElementById("blur-btn").disabled = true;
+    document.getElementById("bench-btn").disabled = true;
+    return;
+  }
+
+  // Initialize DAOP polyfill
+  const result = initDAOP();
+  if (!result.ok) {
+    console.error("Failed to init DAOP:", result.error);
+    return;
+  }
+
+  // Load image
+  try {
+    renderer = new BlurRenderer(document.getElementById("image-canvas"));
+    await renderer.loadImage("./meeting.jpg"); 
+  } catch (e) {
+    console.error("Failed to load image:", e);
+    document.getElementById("blur-status").innerHTML = `<p style="color:red">Error loading image: ${e.message}</p>`;
+  }
+
+  // Enable toggle buttons if cached benchmark data exists in localStorage
+  if (timeModelDatabase.hasBenchmarkData()) {
+    document.getElementById("toggle-results-btn").disabled = false;
+    document.getElementById("show-curves-btn").disabled = false;
+    renderBenchResultsFromCache();
+  }
+});
+
+// Graph collapse/expand toggle
+// Mermaid can't render into display:none containers, so we store the
+// raw Mermaid code and render on first expand.
+let _pendingMermaidCode = null;
+
+document.getElementById("toggle-graph-btn").onclick = async () => {
+  const wrap = document.getElementById("comp-graph-wrap");
+  const btn = document.getElementById("toggle-graph-btn");
+  const collapsed = wrap.style.display === "none";
+  wrap.style.display = collapsed ? "" : "none";
+  btn.textContent = collapsed ? "Collapse" : "Expand";
+
+  // If expanding and there is pending Mermaid code, render it now
+  if (collapsed && _pendingMermaidCode) {
+    const graphDiv = document.getElementById("comp-graph");
+    graphDiv.removeAttribute("data-processed");
+    graphDiv.innerHTML = _pendingMermaidCode;
+    await mermaid.run({ nodes: [graphDiv] });
+    _pendingMermaidCode = null;
+  }
+};
+
+// Build results table HTML from timeModelDatabase cached points
+function renderBenchResultsFromCache() {
+  const allModels = timeModelDatabase.getAllModels();
+  const resultsDiv = document.getElementById("bench-results");
+  
+  let html = `<table>
+    <tr>
+      <th>Op</th>
+      <th>Size</th>
+      <th>Total Elements</th>
+      <th>Median (ms)</th>
+      <th>Min (ms)</th>
+      <th>P90 (ms)</th>
+    </tr>`;
+  
+  for (const [opType, model] of Object.entries(allModels)) {
+    if (!model.points || model.points.length === 0) continue;
+    for (const p of model.points) {
+      html += `<tr>
+        <td>${opType}</td>
+        <td>${p.label || "—"}</td>
+        <td>${p.totalElements.toLocaleString()}</td>
+        <td>${p.medianMs.toFixed(3)}</td>
+        <td>${(p.minMs || 0).toFixed(3)}</td>
+        <td>${(p.p90Ms || 0).toFixed(3)}</td>
+      </tr>`;
+    }
+  }
+  html += "</table>";
+  resultsDiv.innerHTML = html;
+}
+
+// 2. Re-run Benchmarks
+document.getElementById("bench-btn").onclick = async () => {
+  const benchBtn = document.getElementById("bench-btn");
+  benchBtn.disabled = true;
+  const resultsDiv = document.getElementById("bench-results");
+  const summaryDiv = document.getElementById("bench-summary");
+  resultsDiv.innerHTML = "<p>Running benchmarks...</p>";
+  resultsDiv.style.display = "";
+  summaryDiv.innerHTML = "";
+  
+  // Hide curves from previous run
+  document.getElementById("model-details").style.display = "none";
+  const curvesBtn = document.getElementById("show-curves-btn");
+  curvesBtn.classList.remove("active");
+  curvesBtn.querySelector(".eye").textContent = "👁";
+  
+  // Update toggle button to reflect visible state (results table shown during run)
+  const resultsBtn = document.getElementById("toggle-results-btn");
+  resultsBtn.classList.add("active");
+  resultsBtn.querySelector(".eye").textContent = "👁‍🗨";
+  resultsBtn.disabled = false;
+  
+  const benchStart = performance.now();
+  
+  try {
+    const runner = new BenchRunner({ deviceType: "gpu" });
+    let baselineMs = 0;
+    const results = await runner.benchmarkAll((progress) => {
+      if (progress.phase === "baseline") {
+        resultsDiv.innerHTML = `<p>Measuring dispatch overhead (baseline)...</p>`;
+        return;
+      }
+      if (progress.phase === "baseline-done") {
+        baselineMs = progress.baselineMs;
+        resultsDiv.innerHTML = `<p>Baseline overhead: ${progress.baselineMs.toFixed(3)} ms/dispatch. Benchmarking operators...</p>`;
+        return;
+      }
+      const label = progress.label ? ` [${progress.label}]` : "";
+      resultsDiv.innerHTML = `<p>Benchmarking: ${progress.opType}${label} (${progress.phase})...</p>`;
+    });
+    
+    const benchTime = ((performance.now() - benchStart) / 1000).toFixed(1);
+    
+    let totalOps = 0;
+    let totalVariants = 0;
+    for (const r of results) {
+      if (!r.error) {
+        totalOps++;
+        totalVariants += r.sizes.length;
+      }
+    }
+    
+    summaryDiv.innerHTML = `<p style="color: #28a745; font-weight: 600;">${totalOps} operators, ${totalVariants} size variants benchmarked in ${benchTime}s (baseline overhead: ${baselineMs.toFixed(3)} ms/dispatch)</p>`;
+    
+    // Rebuild table from fresh cached data
+    renderBenchResultsFromCache();
+    
+    // Enable both toggle buttons
+    document.getElementById("toggle-results-btn").disabled = false;
+    document.getElementById("show-curves-btn").disabled = false;
+    
+  } catch (e) {
+    resultsDiv.innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
+  } finally {
+    benchBtn.disabled = false;
+  }
+};
+
+// Toggle benchmark results table visibility
+document.getElementById("toggle-results-btn").onclick = () => {
+  const resultsDiv = document.getElementById("bench-results");
+  const btn = document.getElementById("toggle-results-btn");
+  const visible = resultsDiv.style.display !== "none";
+  resultsDiv.style.display = visible ? "none" : "";
+  btn.classList.toggle("active", !visible);
+  btn.querySelector(".eye").textContent = visible ? "👁" : "👁‍🗨";
+};
+
+// Toggle estimation curves (per-op SVG charts)
+document.getElementById("show-curves-btn").onclick = () => {
+  const detailsDiv = document.getElementById("model-details");
+  const btn = document.getElementById("show-curves-btn");
+  
+  if (detailsDiv.style.display !== "none") {
+    detailsDiv.style.display = "none";
+    btn.classList.remove("active");
+    btn.querySelector(".eye").textContent = "👁";
+    return;
+  }
+  
+  const allModels = timeModelDatabase.getAllModels();
+  if (!allModels || Object.keys(allModels).length === 0) {
+    detailsDiv.innerHTML = "<p>No benchmark data available. Run benchmarks first.</p>";
+    detailsDiv.style.display = "";
+    btn.textContent = "📈 Hide Estimation Curves";
+    return;
+  }
+  
+  let html = '<h4 style="color: #ccc;">Per-Operator Estimation Curves</h4><div style="display: grid; grid-template-columns: repeat(auto-fill, 350px); gap: 12px; justify-content: center;">';
+  
+  for (const [opType, model] of Object.entries(allModels)) {
+    if (!model.points || model.points.length === 0) continue;
+    html += `<div class="op-chart" style="text-align: center;">
+      <strong style="display: block; margin-bottom: 4px; font-size: 13px; color: #ccc;">${opType}</strong>
+      ${drawTimeModelChart(opType, model)}
+    </div>`;
+  }
+  
+  html += '</div>';
+  detailsDiv.innerHTML = html;
+  detailsDiv.style.display = "";
+  btn.classList.add("active");
+  btn.querySelector(".eye").textContent = "👁‍🗨";
+};
+
+function drawTimeModelChart(opType, model) {
+  const width = 350, height = 200;
+  const padL = 55, padR = 15, padT = 15, padB = 40;
+  const plotW = width - padL - padR;
+  const plotH = height - padT - padB;
+  
+  const points = model.points;
+  if (!points || points.length === 0) return "";
+  
+  // Both axes in log space (log-log plot)
+  const logXs = points.map(p => Math.log(p.totalElements));
+  const logYs = points.map(p => Math.log(Math.max(1e-6, p.medianMs)));
+  
+  const xMin = Math.min(...logXs);
+  const xMax = Math.max(...logXs);
+  const yMin = Math.min(...logYs) - 0.3;
+  const yMax = Math.max(...logYs) + 0.3;
+  
+  const xRange = xMax - xMin || 1;
+  const yRange = yMax - yMin || 1;
+  
+  function toSvgX(logX) { return padL + (logX - xMin) / xRange * plotW; }
+  function toSvgY(logY) { return padT + plotH - (logY - yMin) / yRange * plotH; }
+  
+  function fmtElements(n) {
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + "M";
+    if (n >= 1e3) return (n / 1e3).toFixed(0) + "K";
+    return String(n);
+  }
+  
+  function fmtMs(ms) {
+    if (ms >= 1) return ms.toFixed(1);
+    return ms.toFixed(3);
+  }
+  
+  let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="background:#232338; border:1px solid #444; border-radius:4px;">`;
+  
+  // Axes
+  svg += `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#888" stroke-width="1"/>`;
+  svg += `<line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}" stroke="#888" stroke-width="1"/>`;
+  
+  // Axis labels — indicate log scale
+  svg += `<text x="${padL + plotW / 2}" y="${height - 3}" font-size="10" fill="#999" text-anchor="middle">Input Size — log scale</text>`;
+  svg += `<text x="12" y="${padT + plotH / 2}" font-size="10" fill="#999" text-anchor="middle" transform="rotate(-90,12,${padT + plotH / 2})">Time (ms) — log scale</text>`;
+  
+  // X-axis ticks at measured points
+  for (let i = 0; i < points.length; i++) {
+    const sx = toSvgX(logXs[i]);
+    svg += `<line x1="${sx}" y1="${padT + plotH}" x2="${sx}" y2="${padT + plotH + 4}" stroke="#666" stroke-width="1"/>`;
+    svg += `<text x="${sx}" y="${padT + plotH + 16}" font-size="8" fill="#999" text-anchor="middle">${fmtElements(points[i].totalElements)}</text>`;
+  }
+  
+  // Y-axis ticks at measured points (show actual ms values)
+  const yTicks = [...new Set(logYs)].sort((a, b) => a - b);
+  for (const logY of yTicks) {
+    const sy = toSvgY(logY);
+    const msVal = Math.exp(logY);
+    svg += `<line x1="${padL - 3}" y1="${sy}" x2="${padL}" y2="${sy}" stroke="#666" stroke-width="1"/>`;
+    svg += `<text x="${padL - 5}" y="${sy + 3}" font-size="8" fill="#999" text-anchor="end">${fmtMs(msVal)}</text>`;
+    svg += `<line x1="${padL}" y1="${sy}" x2="${padL + plotW}" y2="${sy}" stroke="#333" stroke-width="1"/>`;
+  }
+  
+  // Fitted curve (coeffs are in log-log space, with optional left-side clamp)
+  if (model.coeffs) {
+    const steps = 50;
+    const hasClamp = model.clampBelowLogX != null && model.clampLogY != null;
+
+    if (hasClamp) {
+      // 1. Flat clamp segment: xMin → clampBelowLogX (dashed, muted color)
+      const clampPoints = [];
+      const clampEnd = Math.min(model.clampBelowLogX, xMin + xRange);
+      const clampSteps = Math.max(2, Math.round(steps * (clampEnd - xMin) / xRange));
+      for (let i = 0; i <= clampSteps; i++) {
+        const logX = xMin + (i / clampSteps) * (clampEnd - xMin);
+        clampPoints.push(`${toSvgX(logX).toFixed(1)},${toSvgY(model.clampLogY).toFixed(1)}`);
+      }
+      svg += `<polyline points="${clampPoints.join(" ")}" fill="none" stroke="#e53935" stroke-width="2" stroke-dasharray="5,3" opacity="0.6"/>`;
+
+      // 2. Fitted line segment: clampBelowLogX → xMax (solid)
+      const fitPoints = [];
+      const fitSteps = Math.max(2, Math.round(steps * (xMin + xRange - model.clampBelowLogX) / xRange));
+      for (let i = 0; i <= fitSteps; i++) {
+        const logX = model.clampBelowLogX + (i / fitSteps) * (xMin + xRange - model.clampBelowLogX);
+        const logY = polyEval(model.coeffs, logX);
+        fitPoints.push(`${toSvgX(logX).toFixed(1)},${toSvgY(logY).toFixed(1)}`);
+      }
+      svg += `<polyline points="${fitPoints.join(" ")}" fill="none" stroke="#e53935" stroke-width="2"/>`;
+
+      // Clamp boundary marker (small vertical tick)
+      const cx = toSvgX(model.clampBelowLogX);
+      const cy = toSvgY(model.clampLogY);
+      svg += `<circle cx="${cx}" cy="${cy}" r="3" fill="none" stroke="#e53935" stroke-width="1.5"/>`;
+    } else {
+      // No clamp — single fitted line across full range
+      const curvePoints = [];
+      for (let i = 0; i <= steps; i++) {
+        const logX = xMin + (i / steps) * xRange;
+        const logY = polyEval(model.coeffs, logX);
+        curvePoints.push(`${toSvgX(logX).toFixed(1)},${toSvgY(logY).toFixed(1)}`);
+      }
+      svg += `<polyline points="${curvePoints.join(" ")}" fill="none" stroke="#e53935" stroke-width="2"/>`;
+    }
+  }
+  
+  // Data points as circles
+  for (let i = 0; i < points.length; i++) {
+    const sx = toSvgX(logXs[i]);
+    const sy = toSvgY(logYs[i]);
+    svg += `<circle cx="${sx}" cy="${sy}" r="5" fill="#1e88e5"/>`;
+    svg += `<text x="${sx}" y="${sy - 8}" font-size="8" fill="#1e88e5" text-anchor="middle">${points[i].medianMs.toFixed(2)}</text>`;
+  }
+  
+  svg += "</svg>";
+  return svg;
+}
+
+// 4. Apply Background Blur
+document.getElementById("blur-btn").onclick = async () => {
+  const blurBtn = document.getElementById("blur-btn");
+  blurBtn.disabled = true;
+  const status = document.getElementById("blur-status");
+  
+  // Reset cards
+  document.getElementById("graph-card").style.display = "none";
+  document.getElementById("qos-card").style.display = "none";
+  document.getElementById("decision-card").style.display = "none";
+  document.getElementById("execution-card").style.display = "none";
+  
+  try {
+    // Step 1: Build weightless graph
+    status.innerHTML = "<p>Step 1: Building weightless computation graph...</p>";
+    const context = await navigator.ml.createContext({ deviceType: "gpu" });
+    const builder = new MLGraphBuilder(context);
+    const { graph, weightMeta } = buildSelfieSegmentationGraph(builder);
+    
+    // Show computation graph card (collapsed by default)
+    const graphCard = document.getElementById("graph-card");
+    graphCard.style.display = "block";
+    const mermaidCode = graph.toMermaid();
+    // Store code for deferred rendering — container is display:none
+    _pendingMermaidCode = mermaidCode;
+    // Reset collapse state
+    document.getElementById("comp-graph-wrap").style.display = "none";
+    document.getElementById("toggle-graph-btn").textContent = "Expand";
+    
+    // Step 2: QoS Estimation
+    if (!timeModelDatabase.hasBenchmarkData()) {
+      status.innerHTML = `<p style="color: #e67e22; font-weight: bold;">⚠️ No benchmark data available. Please run micro-benchmarks first (right panel) before estimating QoS.</p>`;
+      blurBtn.disabled = false;
+      return;
+    }
+    status.innerHTML = "<p>Step 2: Estimating QoS...</p>";
+    const qos = await context.estimateQoS(graph);
+    
+    const qosCard = document.getElementById("qos-card");
+    qosCard.style.display = "block";
+      document.getElementById("qos-results").innerHTML = `
+        <p>Performance Tier: <span class="status ${qos.performanceTier}">${qos.performanceTier.toUpperCase()}</span></p>
+        <p>Estimation Method: <strong>Direct Interpolation</strong></p>
+      <p>Estimated Total Time: ${qos.internal.totalTimeMs.toFixed(2)} ms (incl. ${qos.internal.graphDispatchOverheadMs.toFixed(2)} ms graph dispatch overhead)</p>
+      <p>Operators: ${qos.internal.breakdown.length}</p>
+      <details>
+        <summary>Operator Breakdown</summary>
+           <table>
+            <tr><th>Op</th><th>Time (ms)</th><th>Input Elements</th></tr>
+            ${qos.internal.breakdown.map(b =>
+              `<tr><td>${b.opType}</td><td>${b.timeMs.toFixed(3)}</td><td>${(b.inputElements || 0).toLocaleString()}</td></tr>`
+            ).join("")}
+          </table>
+      </details>`;
+    
+    // Update Mermaid code with QoS annotations (deferred render on expand)
+    _pendingMermaidCode = graph.toMermaid(qos.internal.breakdown);
+    
+    // Step 3: Offloading decision
+    const decisionCard = document.getElementById("decision-card");
+    decisionCard.style.display = "block";
+    const offload = ["slow", "very-slow", "poor"].includes(qos.performanceTier);
+    document.getElementById("decision-text").innerHTML = offload
+      ? `<p style="color: #dc3545; font-weight: bold;">Decision: Offload to Cloud — local performance is insufficient.</p>`
+      : `<p style="color: #28a745; font-weight: bold;">Decision: Run Locally — estimated ${qos.internal.totalTimeMs.toFixed(1)}ms is acceptable.</p>
+         <p>Proceeding with local execution...</p>`;
+    
+    if (offload) {
+      status.innerHTML = "<p>Model offloaded to cloud (in a real app, this would call a cloud API).</p>";
+      blurBtn.disabled = false;
+      return;
+    }
+    
+    // Step 4: Download weights + bind + compile + compute
+    status.innerHTML = "<p>Step 4: Downloading model weights...</p>";
+    const executionCard = document.getElementById("execution-card");
+    executionCard.style.display = "block";
+    const execLog = document.getElementById("execution-log");
+    
+    const downloadStart = performance.now();
+    const weights = await loadWeights((progress) => {
+      status.innerHTML = `<p>Downloading weights: ${progress.label}...</p>`;
+    });
+    const downloadTime = performance.now() - downloadStart;
+    execLog.innerHTML = `<p>Weight download: ${(downloadTime/1000).toFixed(1)}s</p>`;
+    
+    // Bind constants
+    status.innerHTML = "<p>Step 4: Binding constants...</p>";
+    await context.bindConstants(graph, weights);
+    
+    // Compile graph (separate from inference)
+    status.innerHTML = "<p>Step 4: Compiling native graph...</p>";
+    const compileStart = performance.now();
+    await context.compileGraph(graph);
+    const compileTime = performance.now() - compileStart;
+    execLog.innerHTML += `<p>Graph compilation: ${(compileTime/1000).toFixed(1)}s</p>`;
+    
+    // Prepare input
+    status.innerHTML = "<p>Step 5: Running inference...</p>";
+    if (!renderer) {
+        throw new Error("Renderer not initialized");
+    }
+    const inputData = renderer.getModelInput(256, 256, "nhwc");
+    
+    // Run compute with timing (compilation already done — this is pure inference)
+    const inferStart = performance.now();
+    const results = await context.compute(graph, { input: inputData });
+    const inferTime = performance.now() - inferStart;
+    
+    // Apply blur
+    const mask = new Float32Array(results.output);
+    renderer.applyBlur(mask);
+    
+    // Step 5: Show timing comparison
+    const timingDiv = document.getElementById("timing-comparison");
+    
+    timingDiv.innerHTML = `
+      <h4>Timing Comparison</h4>
+      <table>
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Estimated (Interpolation)</td><td>${qos.internal.totalTimeMs.toFixed(2)} ms</td></tr>
+        <tr><td>Actual Inference</td><td>${inferTime.toFixed(2)} ms</td></tr>
+        <tr><td>Graph Compilation</td><td>${compileTime.toFixed(0)} ms</td></tr>
+        <tr><td>Weight Download</td><td>${downloadTime.toFixed(0)} ms</td></tr>
+      </table>`;
+    
+    status.innerHTML = `<p style="color: #28a745; font-weight: bold;">Background blur applied successfully!</p>`;
+    
+  } catch (err) {
+    status.innerHTML = `<p style="color: #dc3545;">Error: ${err.message}</p>`;
+    console.error(err);
+  } finally {
+    blurBtn.disabled = false;
+  }
+};
+</script>
+</body>
+</html>
